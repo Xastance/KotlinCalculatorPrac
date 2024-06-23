@@ -21,6 +21,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btn7: Button
     private lateinit var btn8: Button
     private lateinit var btn9: Button
+    private lateinit var btnDecPoint: Button
 
     private lateinit var btnClearAll: Button
     private lateinit var btnPercent: Button
@@ -33,6 +34,8 @@ class MainActivity : AppCompatActivity() {
 
     private var strEquation1: String = "0"
     private var strEquation2: String = ""
+    private var lastOperation: String? = null
+    private var isResultDisplayed: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,9 +47,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun appendNumber(str: String) {
-
-        if(strEquation1.startsWith("0")){
+        if (isResultDisplayed) {
             strEquation1 = ""
+            isResultDisplayed = false
+        }
+
+        if (strEquation1 == "0" && str != ".") {
+            strEquation1 = ""
+        }
+
+        if (str == "." && strEquation1.contains(".")) {
+            return
         }
 
         strEquation1 += str
@@ -63,8 +74,45 @@ class MainActivity : AppCompatActivity() {
 
     private fun clearAll() {
         strEquation1 = "0"
+        strEquation2 = ""
         tvResult.text = strEquation1
         tvWorking.text = ""
+        lastOperation = null
+        isResultDisplayed = false
+    }
+
+    private fun performOperation(op: String) {
+        if (lastOperation != null && strEquation1.isNotEmpty()) {
+            calculateResult()
+        } else {
+            strEquation2 = strEquation1
+        }
+        lastOperation = op
+        strEquation1 = "0"
+        tvWorking.text = "$strEquation2 $op"
+    }
+
+    private fun calculateResult() {
+        val num1 = strEquation2.toDouble()
+        val num2 = strEquation1.toDouble()
+        val result = when (lastOperation) {
+            "\u002B" -> num1 + num2
+            "\u2212" -> num1 - num2
+            "\u00D7" -> num1 * num2
+            "\u00F7" -> num1 / num2
+            "\u0025" -> num1 % num2
+            else -> num2
+        }
+        strEquation1 = if (result % 1 == 0.0) {
+            result.toInt().toString()
+        } else {
+            result.toString()
+        }
+        strEquation2 = result.toString()
+        tvResult.text = strEquation1
+        tvWorking.text = ""
+        lastOperation = null
+        isResultDisplayed = true
     }
 
     private fun setViewIds() {
@@ -81,6 +129,7 @@ class MainActivity : AppCompatActivity() {
         btn7 = findViewById(R.id.btn7)
         btn8 = findViewById(R.id.btn8)
         btn9 = findViewById(R.id.btn9)
+        btnDecPoint = findViewById(R.id.btnDecPoint)
 
         btnPercent = findViewById(R.id.btnPercent)
         btnDivide = findViewById(R.id.btnDivide)
@@ -107,14 +156,15 @@ class MainActivity : AppCompatActivity() {
         btn7.setOnClickListener { appendNumber("7") }
         btn8.setOnClickListener { appendNumber("8") }
         btn9.setOnClickListener { appendNumber("9") }
+        btnDecPoint.setOnClickListener { appendNumber(".") }
 
-        btnPercent.setOnClickListener { appendNumber("9") }
-        btnDivide.setOnClickListener { appendNumber("9") }
-        btnTimes.setOnClickListener { appendNumber("9") }
-        btnMinus.setOnClickListener { appendNumber("9") }
-        btnPlus.setOnClickListener { appendNumber("9") }
+        btnPercent.setOnClickListener { performOperation("\u0025") }
+        btnDivide.setOnClickListener { performOperation("\u00F7") }
+        btnTimes.setOnClickListener { performOperation("\u00D7") }
+        btnMinus.setOnClickListener { performOperation("\u2212") }
+        btnPlus.setOnClickListener { performOperation("\u002B") }
 
-        btnEquals.setOnClickListener { appendNumber("9") }
+        btnEquals.setOnClickListener { calculateResult() }
 
         btnClearAll.setOnClickListener{clearAll()}
         btnBackSpace.setOnClickListener{backSpaceDigits()}
